@@ -173,6 +173,25 @@ void ng_draw_circle(int x, int y, int radius)
 
 void ng_draw_square(int x0, int y0, int x1, int y1)
 {
+    glUseProgram(ng_program);
+    glEnableVertexAttribArray(ng_attribute_coord2d);
+    GLfloat triangle_vertices[] = {
+        0.0, 0.0,
+        0.0, 1.0,
+        1.0, 1.0,
+        1.0, 0.0,
+    };
+    glVertexAttribPointer(
+        ng_attribute_coord2d, // attribute
+        2,                 // number of elements per vertex, here (x,y)
+        GL_FLOAT,          // the type of each element
+        GL_FALSE,          // take our values as-is
+        0,                 // no extra data between each position
+        triangle_vertices  // pointer to the C array
+    );
+
+    glDrawArrays(GL_QUADS, 0, 4);
+    glDisableVertexAttribArray(ng_attribute_coord2d);
 }
 
 void ng_get_mouse(int* x, int* y, int* button, int* state)
