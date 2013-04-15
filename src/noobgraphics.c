@@ -212,7 +212,7 @@ void ng_draw_circle(int x, int y, int radius)
 {
 }
 
-void ng_draw_square(int x0, int y0, int x1, int y1)
+void ng_draw_rectangle(int x0, int y0, int x1, int y1)
 {
     glUseProgram(ng_program);
     glEnableVertexAttribArray(ng_attribute_coord2d);
