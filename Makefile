@@ -1,4 +1,13 @@
-# TODO: rewrite with library .a, remove unnecessary linking
-all:
+all: clean examples
+
+library:
+	gcc $(CFLAGS) -c src/*.c -o bin/libnoobgraphics.a
+
+examples: library
+	gcc $(CFLAGS) $(LDFLAGS) examples/hello.c -o bin/hello
+
+clean:
 	rm -f bin/*
-	gcc -lglut -lGLU -lGLEW -Iinclude src/*.c examples/hello.c -g -o bin/hello
+
+LDFLAGS=-lglut -lGLEW bin/libnoobgraphics.a
+CFLAGS=-Iinclude -g

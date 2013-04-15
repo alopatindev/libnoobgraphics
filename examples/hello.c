@@ -10,13 +10,15 @@ void on_update(int dt)
 
 void on_render()
 {
-    ng_set_color(0xff0000ff);
+    ng_set_color(0xFF0000FF);
     ng_draw_rectangle(30, 10, 400, 300);
-    ng_set_color(0x00aa0055);
+    ng_set_color(0x00AA0055);
     ng_draw_rectangle(30, 30, 500, 50);
 
-    ng_set_color(0x00ff00FF);
+    ng_set_color(0x00FF00FF);
     ng_draw_line(0, 0, 400, 300, 30);
+
+    ng_draw_text(5, 5, "asdASD asdasddsgdfsg");
 }
 
 int main()

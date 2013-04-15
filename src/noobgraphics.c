@@ -3,6 +3,7 @@
 #include <GL/glut.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 static void ng_on_mouse_input(int button, int state, int x, int y);
 static void ng_on_mouse_move(int x, int y);
@@ -16,6 +17,8 @@ static void ng_on_reshape(int width, int height);
 static int ng_init_resources();
 static void ng_free_resources();
 static void ng_log_shader(const char* tag, GLuint i);
+static void ng_convert_color(unsigned int rgba_color,
+                             GLfloat* r, GLfloat* g, GLfloat* b, GLfloat* a);
 
 static int ng_mouse_x;
 static int ng_mouse_y;
@@ -190,18 +193,23 @@ void ng_set_color(unsigned int rgba_color)
 
     ng_rgba_color = rgba_color;
 
-    int r = rgba_color >> 24;
-    int g = (rgba_color << 8) >> 24;
-    int b = (rgba_color << 16) >> 24;
-    int a = (rgba_color << 24) >> 24;
-    GLfloat c[] = {
-        r / 255.0f,
-        g / 255.0f,
-        b / 255.0f,
-        a / 255.0f
-    };
+    GLfloat c[4];
+    ng_convert_color(rgba_color, c, c+1, c+2, c+3);
 
     glUniform4fv(ng_uniform_color, 1, c);
+}
+
+void ng_convert_color(unsigned int rgba_color,
+                      GLfloat* r, GLfloat* g, GLfloat* b, GLfloat* a)
+{
+    int ir = rgba_color >> 24;
+    int ig = (rgba_color << 8) >> 24;
+    int ib = (rgba_color << 16) >> 24;
+    int ia = (rgba_color << 24) >> 24;
+    *r = ir / 255.0f;
+    *g = ig / 255.0f;
+    *b = ib / 255.0f;
+    *a = ia / 255.0f;
 }
 
 void ng_draw_line(int x0, int y0, int x1, int y1, int width)
@@ -239,6 +247,17 @@ void ng_draw_rectangle(int x0, int y0, int x1, int y1)
 
     glDrawArrays(GL_QUADS, 0, 4);
     glDisableVertexAttribArray(ng_attribute_coord2d);
+}
+
+void ng_draw_text(int x, int y, const char* text)
+{
+    GLfloat r, g, b, a;
+    void* font = GLUT_BITMAP_9_BY_15;
+    glRasterPos2f(x, y);
+    size_t len, i;
+    len = (size_t) strlen(text);
+    for (i = 0; i < len; i++)
+        glutBitmapCharacter(font, text[i]);
 }
 
 void ng_get_mouse(int* x, int* y, int* button, int* state)
