@@ -24,18 +24,6 @@ void nb_draw_text(int x, int y, const char* text); // TODO: size?
 void nb_get_mouse(int* x, int* y, int* button, int* state);
 void nb_get_keyboard(unsigned char* key, int* state);
 
-static void nb_on_mouse_input(int button, int state, int x, int y);
-static void nb_on_keyboard_press(unsigned char key, int x, int y);
-static void nb_on_keyboard_release(unsigned char key, int x, int y);
-static void (*nb_on_update)();
-
-static int nb_mouse_x;
-static int nb_mouse_y;
-static int nb_mouse_button;
-static int nb_mouse_state;
-static unsigned char nb_keyboard_key;
-static int nb_keyboard_state;
-
 // TODO: pause, dt?
 
 #endif
