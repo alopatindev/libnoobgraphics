@@ -52,7 +52,7 @@ void ng_init_graphics(int width,
     ng_window_height = height;
 
     glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
+    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_ALPHA);
     glutInitWindowSize(width, height);
     glutCreateWindow(title);
 
@@ -80,6 +80,11 @@ void ng_init_graphics(int width,
     glutPassiveMotionFunc(ng_on_mouse_move);
     glutDisplayFunc(ng_on_clear_and_render);
     glutReshapeFunc(ng_on_reshape);
+
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_BLEND);
+    glAlphaFunc(GL_GREATER, 0.01);
+    //glEnable(GL_ALPHA_TEST);
 
     ng_on_reshape(width, height);
     ng_on_clear_and_render();
@@ -211,22 +216,18 @@ void ng_draw_square(int x0, int y0, int x1, int y1)
 {
     glUseProgram(ng_program);
     glEnableVertexAttribArray(ng_attribute_coord2d);
-    GLfloat verts[] = {
-        0.0, 0.0,
-        0.0, 1.0,
-        1.0, 1.0,
-        1.0, 0.0,
-    };
-    /*float x0f = x0 / ng_window_width;
-    float y0f = y0 / ng_window_height;
-    float x1f = x1 / ng_window_width;
-    float y1f = y1 / ng_window_height;
+
+    GLfloat x0f = x0 / (GLfloat)ng_window_width;
+    GLfloat y0f = y0 / (GLfloat)ng_window_height;
+    GLfloat x1f = x1 / (GLfloat)ng_window_width;
+    GLfloat y1f = y1 / (GLfloat)ng_window_height;
     GLfloat verts[] = {
         x0f, y0f,
         x0f, y1f,
         x1f, y1f,
         x1f, y0f,
-    };*/
+    };
+
     glVertexAttribPointer(
         ng_attribute_coord2d, // attribute
         2,                    // number of elements per vertex, here (x,y)

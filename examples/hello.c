@@ -10,8 +10,8 @@ void on_update(int dt)
 
 void on_render()
 {
-    ng_set_color(0xff0000FF);
-    ng_draw_square(30, 30, 400, 300);
+    ng_set_color(0xff0000ff);
+    ng_draw_square(30, 10, 400, 300);
     ng_set_color(0x00aa0055);
     ng_draw_square(30, 30, 500, 50);
 
