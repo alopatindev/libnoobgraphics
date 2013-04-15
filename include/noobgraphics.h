@@ -11,7 +11,7 @@
 void nb_init_graphics(int width,
                       int height,
                       const char* title,
-                      void (*update_func)(),
+                      void (*update_func)(int),
                       void (*render_func)());
 
 void nb_set_color(int rgba_color);

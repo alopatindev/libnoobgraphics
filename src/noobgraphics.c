@@ -5,7 +5,8 @@
 static void nb_on_mouse_input(int button, int state, int x, int y);
 static void nb_on_keyboard_press(unsigned char key, int x, int y);
 static void nb_on_keyboard_release(unsigned char key, int x, int y);
-static void (*nb_on_update)();
+static void (*nb_on_update_dt)(int dt);
+static void nb_on_update();
 
 static int nb_mouse_x;
 static int nb_mouse_y;
@@ -13,6 +14,8 @@ static int nb_mouse_button;
 static int nb_mouse_state;
 static unsigned char nb_keyboard_key;
 static int nb_keyboard_state;
+static int nb_rgba_color;
+static int nb_dt;
 
 void nb_init_graphics(int width,
                       int height,
@@ -29,13 +32,15 @@ void nb_init_graphics(int width,
     nb_mouse_state = RELEASED;
     nb_keyboard_key = 0;
     nb_keyboard_state = RELEASED;
+    nb_rgba_color = 0;
+    nb_dt = 0;
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
     glutInitWindowSize(width, height);
     glutCreateWindow(title);
 
-    nb_on_update = update_func;
+    nb_on_update_dt = update_func;
     glutIdleFunc(nb_on_update);
     glutKeyboardFunc(nb_on_keyboard_press);
     glutKeyboardUpFunc(nb_on_keyboard_release);
@@ -47,6 +52,7 @@ void nb_init_graphics(int width,
 
 void nb_set_color(int rgba_color)
 {
+    nb_rgba_color = rgba_color;
 }
 
 void nb_draw_line(int x0, int y0, int x1, int y1, int width)
@@ -100,4 +106,17 @@ void nb_on_keyboard_release(unsigned char key, int x, int y)
     nb_keyboard_key = key;
     nb_keyboard_state = RELEASED;
     nb_on_update();
+}
+
+void nb_on_update()
+{
+    static int time_base = -1;
+    int time = glutGet(GLUT_ELAPSED_TIME);
+    if (time_base < 0)
+        time_base = time;
+
+    nb_on_update_dt(nb_dt);
+
+    nb_dt = time - time_base;
+    time_base = time;
 }

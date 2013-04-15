@@ -1,6 +1,6 @@
 #include <noobgraphics.h>
 
-void on_update()
+void on_update(int dt)
 {
 }
 
