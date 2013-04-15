@@ -1,12 +1,17 @@
 #include <noobgraphics.h>
 #include <GL/glew.h>
 #include <GL/glut.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 static void nb_on_mouse_input(int button, int state, int x, int y);
+static void nb_on_mouse_move(int x, int y);
 static void nb_on_keyboard_press(unsigned char key, int x, int y);
 static void nb_on_keyboard_release(unsigned char key, int x, int y);
 static void (*nb_on_update_dt)(int dt);
 static void nb_on_update();
+static int nb_init_resources();
+static void nb_free_resources();
 
 static int nb_mouse_x;
 static int nb_mouse_y;
@@ -16,6 +21,7 @@ static unsigned char nb_keyboard_key;
 static int nb_keyboard_state;
 static int nb_rgba_color;
 static int nb_dt;
+static GLuint nb_program;
 
 void nb_init_graphics(int width,
                       int height,
@@ -40,14 +46,78 @@ void nb_init_graphics(int width,
     glutInitWindowSize(width, height);
     glutCreateWindow(title);
 
+    atexit(nb_free_resources);
+
+    GLenum glew_status = glewInit();
+    if (glew_status != GLEW_OK)
+    {
+        fprintf(stderr, "Error: %s\n", glewGetErrorString(glew_status));
+        return;
+    }
+
+    int result = nb_init_resources();
+
     nb_on_update_dt = update_func;
     glutIdleFunc(nb_on_update);
     glutKeyboardFunc(nb_on_keyboard_press);
     glutKeyboardUpFunc(nb_on_keyboard_release);
     glutMouseFunc(nb_on_mouse_input);
+    glutMotionFunc(nb_on_mouse_move);
+    glutPassiveMotionFunc(nb_on_mouse_move);
     glutDisplayFunc(render_func);
 
     glutMainLoop();
+}
+
+int nb_init_resources()
+{
+    GLint result = GL_FALSE;
+
+    GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+    const char *vs_source =
+        //"#version 120\n"  // OpenGL 2.1
+        "attribute vec2 coord2d;                  "
+        "void main(void) {                        "
+        "  gl_Position = vec4(coord2d, 0.0, 1.0); "
+        "}";
+    glShaderSource(vs, 1, &vs_source, NULL);
+    glCompileShader(vs);
+    glGetShaderiv(vs, GL_COMPILE_STATUS, &result);
+    if (!result)
+    {
+        fprintf(stderr, "Error in vertex shader\n");
+        return 0;
+    }
+    GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+    const char *fs_source =
+        "#version 120           \n"
+        "void main(void) {        "
+        "  gl_FragColor[0] = 0.0; "
+        "  gl_FragColor[1] = 0.0; "
+        "  gl_FragColor[2] = 1.0; "
+        "}";
+    glShaderSource(fs, 1, &fs_source, NULL);
+    glCompileShader(fs);
+    glGetShaderiv(fs, GL_COMPILE_STATUS, &result);
+    if (!result) {
+        fprintf(stderr, "Error in fragment shader\n");
+        return 0;
+    }
+
+    nb_program = glCreateProgram();
+    glAttachShader(nb_program, vs);
+    glAttachShader(nb_program, fs);
+    glLinkProgram(nb_program);
+    glGetProgramiv(nb_program, GL_LINK_STATUS, &result);
+    if (!result) {
+        fprintf(stderr, "glLinkProgram failed\n");
+        return 0;
+    }
+}
+
+void nb_free_resources()
+{
+    glDeleteProgram(nb_program);
 }
 
 void nb_set_color(int rgba_color)
@@ -87,6 +157,13 @@ void nb_on_mouse_input(int button, int state, int x, int y)
     nb_mouse_y = y;
     nb_mouse_button = button;
     nb_mouse_state = state;
+    nb_on_update();
+}
+
+void nb_on_mouse_move(int x, int y)
+{
+    nb_mouse_x = x;
+    nb_mouse_y = y;
     nb_on_update();
 }
 

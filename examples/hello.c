@@ -1,7 +1,11 @@
 #include <noobgraphics.h>
+#include <stdio.h>
 
 void on_update(int dt)
 {
+    /*int x, y, button, state;
+    nb_get_mouse(&x, &y, &button, &state);
+    printf("%d %d %d %d\n", x, y, button, state);*/
 }
 
 void on_render()
