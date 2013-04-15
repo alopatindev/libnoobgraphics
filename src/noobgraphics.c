@@ -4,26 +4,32 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-static void nb_on_mouse_input(int button, int state, int x, int y);
-static void nb_on_mouse_move(int x, int y);
-static void nb_on_keyboard_press(unsigned char key, int x, int y);
-static void nb_on_keyboard_release(unsigned char key, int x, int y);
-static void (*nb_on_update_dt)(int dt);
-static void nb_on_update();
-static int nb_init_resources();
-static void nb_free_resources();
+static void ng_on_mouse_input(int button, int state, int x, int y);
+static void ng_on_mouse_move(int x, int y);
+static void ng_on_keyboard_press(unsigned char key, int x, int y);
+static void ng_on_keyboard_release(unsigned char key, int x, int y);
+static void (*ng_on_update_dt)(int dt);
+static void ng_on_update();
+static void (*ng_on_render)();
+static void ng_on_clear_and_render();
+static void ng_on_reshape(int width, int height);
+static int ng_init_resources();
+static void ng_free_resources();
 
-static int nb_mouse_x;
-static int nb_mouse_y;
-static int nb_mouse_button;
-static int nb_mouse_state;
-static unsigned char nb_keyboard_key;
-static int nb_keyboard_state;
-static int nb_rgba_color;
-static int nb_dt;
-static GLuint nb_program;
+static int ng_mouse_x;
+static int ng_mouse_y;
+static int ng_mouse_button;
+static int ng_mouse_state;
+static unsigned char ng_keyboard_key;
+static int ng_keyboard_state;
+static int ng_rgba_color;
+static int ng_dt;
+static int ng_window_width;
+static int ng_window_height;
+static GLuint ng_program;
+static GLint ng_attribute_coord2d;
 
-void nb_init_graphics(int width,
+void ng_init_graphics(int width,
                       int height,
                       const char* title,
                       void (*update_func)(),
@@ -32,21 +38,21 @@ void nb_init_graphics(int width,
     int argc = 0;
     char** argv = NULL;
 
-    nb_mouse_x = 0;
-    nb_mouse_y = 0;
-    nb_mouse_button = 0;
-    nb_mouse_state = RELEASED;
-    nb_keyboard_key = 0;
-    nb_keyboard_state = RELEASED;
-    nb_rgba_color = 0;
-    nb_dt = 0;
+    ng_mouse_x = 0;
+    ng_mouse_y = 0;
+    ng_mouse_button = 0;
+    ng_mouse_state = RELEASED;
+    ng_keyboard_key = 0;
+    ng_keyboard_state = RELEASED;
+    ng_rgba_color = 0;
+    ng_dt = 0;
+    ng_window_width = width;
+    ng_window_height = height;
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
     glutInitWindowSize(width, height);
     glutCreateWindow(title);
-
-    atexit(nb_free_resources);
 
     GLenum glew_status = glewInit();
     if (glew_status != GLEW_OK)
@@ -55,21 +61,44 @@ void nb_init_graphics(int width,
         return;
     }
 
-    int result = nb_init_resources();
+    int result = ng_init_resources();
+    if (!result)
+        return;
 
-    nb_on_update_dt = update_func;
-    glutIdleFunc(nb_on_update);
-    glutKeyboardFunc(nb_on_keyboard_press);
-    glutKeyboardUpFunc(nb_on_keyboard_release);
-    glutMouseFunc(nb_on_mouse_input);
-    glutMotionFunc(nb_on_mouse_move);
-    glutPassiveMotionFunc(nb_on_mouse_move);
-    glutDisplayFunc(render_func);
+    atexit(ng_free_resources);
+
+    ng_on_update_dt = update_func;
+    ng_on_render = render_func;
+
+    glutIdleFunc(ng_on_update);
+    glutKeyboardFunc(ng_on_keyboard_press);
+    glutKeyboardUpFunc(ng_on_keyboard_release);
+    glutMouseFunc(ng_on_mouse_input);
+    glutMotionFunc(ng_on_mouse_move);
+    glutPassiveMotionFunc(ng_on_mouse_move);
+    glutDisplayFunc(ng_on_clear_and_render);
+    glutReshapeFunc(ng_on_reshape);
+
+    glClearColor(0.0, 0.0, 0.0, 1.0);
 
     glutMainLoop();
 }
 
-int nb_init_resources()
+void ng_on_clear_and_render()
+{
+    glClear(GL_COLOR_BUFFER_BIT);
+    ng_on_render();
+    glutSwapBuffers();
+}
+
+void ng_on_reshape(int width, int height)
+{
+    ng_window_width = width;
+    ng_window_height = height;
+    glClearColor(0.0, 0.0, 0.0, 1.0);
+}
+
+int ng_init_resources()
 {
     GLint result = GL_FALSE;
 
@@ -104,96 +133,111 @@ int nb_init_resources()
         return 0;
     }
 
-    nb_program = glCreateProgram();
-    glAttachShader(nb_program, vs);
-    glAttachShader(nb_program, fs);
-    glLinkProgram(nb_program);
-    glGetProgramiv(nb_program, GL_LINK_STATUS, &result);
+    ng_program = glCreateProgram();
+    glAttachShader(ng_program, vs);
+    glAttachShader(ng_program, fs);
+    glLinkProgram(ng_program);
+    glGetProgramiv(ng_program, GL_LINK_STATUS, &result);
     if (!result) {
         fprintf(stderr, "glLinkProgram failed\n");
         return 0;
     }
+
+    const char* attribute_name = "coord2d";
+    ng_attribute_coord2d = glGetAttribLocation(ng_program, attribute_name);
+    if (ng_attribute_coord2d == -1) {
+        fprintf(stderr, "Could not bind attribute %s\n", attribute_name);
+        return 0;
+    }
+
+    return 1;
 }
 
-void nb_free_resources()
+void ng_free_resources()
 {
-    glDeleteProgram(nb_program);
+    glDeleteProgram(ng_program);
 }
 
-void nb_set_color(int rgba_color)
+void ng_set_color(int rgba_color)
 {
-    nb_rgba_color = rgba_color;
+    ng_rgba_color = rgba_color;
 }
 
-void nb_draw_line(int x0, int y0, int x1, int y1, int width)
-{
-}
-
-void nb_draw_circle(int x, int y, int radius)
+void ng_draw_line(int x0, int y0, int x1, int y1, int width)
 {
 }
 
-void nb_draw_square(int x0, int y0, int x1, int y1)
+void ng_draw_circle(int x, int y, int radius)
 {
 }
 
-void nb_get_mouse(int* x, int* y, int* button, int* state)
+void ng_draw_square(int x0, int y0, int x1, int y1)
 {
-    *x = nb_mouse_x;
-    *y = nb_mouse_y;
-    *button = nb_mouse_button;
-    *state = nb_mouse_state;
 }
 
-void nb_get_keyboard(unsigned char* key, int* state)
+void ng_get_mouse(int* x, int* y, int* button, int* state)
 {
-    *key = nb_keyboard_key;
-    *state = nb_keyboard_state;
+    *x = ng_mouse_x;
+    *y = ng_mouse_y;
+    *button = ng_mouse_button;
+    *state = ng_mouse_state;
 }
 
-void nb_on_mouse_input(int button, int state, int x, int y)
+void ng_get_keyboard(unsigned char* key, int* state)
 {
-    nb_mouse_x = x;
-    nb_mouse_y = y;
-    nb_mouse_button = button;
-    nb_mouse_state = state;
-    nb_on_update();
+    *key = ng_keyboard_key;
+    *state = ng_keyboard_state;
 }
 
-void nb_on_mouse_move(int x, int y)
+void ng_on_mouse_input(int button, int state, int x, int y)
 {
-    nb_mouse_x = x;
-    nb_mouse_y = y;
-    nb_on_update();
+    ng_mouse_x = x;
+    ng_mouse_y = y;
+    ng_mouse_button = button;
+    ng_mouse_state = state;
+    ng_on_update();
 }
 
-void nb_on_keyboard_press(unsigned char key, int x, int y)
+void ng_on_mouse_move(int x, int y)
 {
-    nb_mouse_x = x;
-    nb_mouse_y = y;
-    nb_keyboard_key = key;
-    nb_keyboard_state = PRESSED;
-    nb_on_update();
+    ng_mouse_x = x;
+    ng_mouse_y = y;
+    ng_on_update();
 }
 
-void nb_on_keyboard_release(unsigned char key, int x, int y)
+void ng_on_keyboard_press(unsigned char key, int x, int y)
 {
-    nb_mouse_x = x;
-    nb_mouse_y = y;
-    nb_keyboard_key = key;
-    nb_keyboard_state = RELEASED;
-    nb_on_update();
+    ng_mouse_x = x;
+    ng_mouse_y = y;
+    ng_keyboard_key = key;
+    ng_keyboard_state = PRESSED;
+    ng_on_update();
 }
 
-void nb_on_update()
+void ng_on_keyboard_release(unsigned char key, int x, int y)
+{
+    ng_mouse_x = x;
+    ng_mouse_y = y;
+    ng_keyboard_key = key;
+    ng_keyboard_state = RELEASED;
+    ng_on_update();
+}
+
+int ng_get_window_size(int* width, int* height)
+{
+    *width = ng_window_width;
+    *height = ng_window_height;
+}
+
+void ng_on_update()
 {
     static int time_base = -1;
     int time = glutGet(GLUT_ELAPSED_TIME);
     if (time_base < 0)
         time_base = time;
 
-    nb_on_update_dt(nb_dt);
+    ng_on_update_dt(ng_dt);
 
-    nb_dt = time - time_base;
+    ng_dt = time - time_base;
     time_base = time;
 }
