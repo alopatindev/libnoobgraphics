@@ -17,7 +17,6 @@ void ng_init_graphics(int width,
 void ng_set_color(unsigned int rgba_color);
 
 void ng_draw_line(int x0, int y0, int x1, int y1, int width);
-void ng_draw_circle(int x, int y, int radius);
 void ng_draw_rectangle(int x0, int y0, int x1, int y1);
 void ng_draw_text(int x, int y, const char* text);
 
