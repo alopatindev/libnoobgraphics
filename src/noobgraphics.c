@@ -121,7 +121,8 @@ int ng_init_resources()
         //"#version 120\n"  // OpenGL 2.1
         "attribute vec2 coord2d;"
         "void main(void) {"
-        "  gl_Position = vec4(coord2d, 0.0, 1.0);"
+        "  vec2 coords = vec2(coord2d * 2.0) - vec2(1.0, 1.0);"
+        "  gl_Position = vec4(coords, 0.0, 1.0);"
         "}";
     glShaderSource(vs, 1, &vs_source, NULL);
     glCompileShader(vs);
@@ -214,6 +215,28 @@ void ng_convert_color(unsigned int rgba_color,
 
 void ng_draw_line(int x0, int y0, int x1, int y1, int width)
 {
+    glUseProgram(ng_program);
+    glEnableVertexAttribArray(ng_attribute_coord2d);
+
+    GLfloat ww = (GLfloat)ng_window_width;
+    GLfloat wh = (GLfloat)ng_window_height;
+
+    GLfloat x0f = x0 / ww;
+    GLfloat y0f = y0 / wh;
+    GLfloat x1f = x1 / ww;
+    GLfloat y1f = y1 / wh;
+
+    GLfloat verts[] = {
+        x0f, y0f,
+        x1f, y1f
+    };
+
+    glVertexAttribPointer(ng_attribute_coord2d, 2, GL_FLOAT, GL_FALSE, 0, verts);
+
+    glLineWidth((GLfloat)width);
+    glDrawArrays(GL_LINES, 0, 2);
+
+    glDisableVertexAttribArray(ng_attribute_coord2d);
 }
 
 void ng_draw_circle(int x, int y, int radius)
@@ -225,10 +248,14 @@ void ng_draw_rectangle(int x0, int y0, int x1, int y1)
     glUseProgram(ng_program);
     glEnableVertexAttribArray(ng_attribute_coord2d);
 
-    GLfloat x0f = x0 / (GLfloat)ng_window_width;
-    GLfloat y0f = y0 / (GLfloat)ng_window_height;
-    GLfloat x1f = x1 / (GLfloat)ng_window_width;
-    GLfloat y1f = y1 / (GLfloat)ng_window_height;
+    GLfloat ww = (GLfloat)ng_window_width;
+    GLfloat wh = (GLfloat)ng_window_height;
+
+    GLfloat x0f = x0 / ww;
+    GLfloat y0f = y0 / wh;
+    GLfloat x1f = x1 / ww;
+    GLfloat y1f = y1 / wh;
+
     GLfloat verts[] = {
         x0f, y0f,
         x0f, y1f,
@@ -236,14 +263,7 @@ void ng_draw_rectangle(int x0, int y0, int x1, int y1)
         x1f, y0f,
     };
 
-    glVertexAttribPointer(
-        ng_attribute_coord2d, // attribute
-        2,                    // number of elements per vertex, here (x,y)
-        GL_FLOAT,             // the type of each element
-        GL_FALSE,             // take our values as-is
-        0,                    // no extra data between each position
-        verts                 // pointer to the C array
-    );
+    glVertexAttribPointer(ng_attribute_coord2d, 2, GL_FLOAT, GL_FALSE, 0, verts);
 
     glDrawArrays(GL_QUADS, 0, 4);
     glDisableVertexAttribArray(ng_attribute_coord2d);
