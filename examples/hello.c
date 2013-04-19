@@ -16,9 +16,9 @@ void on_render()
     ng_draw_rectangle(30, 30, 500, 50);
 
     ng_set_color(0x00FF00FF);
-    ng_draw_line(0, 0, 400, 300, 30);
+    ng_draw_line(0, 0, 800, 30, 3);
 
-    ng_draw_text(5, 5, "asdASD asdasddsgdfsg");
+    ng_draw_text(-10, 5, "1asdASD asdasddsgdfsg");
 }
 
 int main()

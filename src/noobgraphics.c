@@ -96,6 +96,11 @@ void ng_init_graphics(int width,
     glutMainLoop();
 }
 
+void ng_force_redraw()
+{
+    glutPostRedisplay();
+}
+
 void ng_on_clear_and_render()
 {
     glClear(GL_COLOR_BUFFER_BIT);
