@@ -16,7 +16,11 @@
 #define CELL_NONE_COLOR 0x000055FF
 #define CELL_SNAKE_COLOR 0x990000FF
 #define CELL_FOOD_COLOR 0x006600FF
+#define CELL_WALL_COLOR 0x000000FF
 #define SNAKE_STEP_SPEED_MS 300
+
+#define WALLS_NUMBER 5
+#define MAX_WALL_SIZE 3
 
 enum GameState
 {
@@ -70,6 +74,7 @@ void turn_snake(enum Direction direction);
 void update_snake();
 enum CellType get_snake_collision(int* x_next, int* y_next);
 struct SnakeCell* alloc_cell();
+void make_walls();
 void make_food();
 
 int main();
@@ -160,6 +165,9 @@ void render_field()
             case Food:
                 color = CELL_FOOD_COLOR;
                 break;
+            case Wall:
+                color = CELL_WALL_COLOR;
+                break;
             }
             render_cell(x, y, color);
         }
@@ -236,6 +244,7 @@ enum CellType get_snake_collision(int* x_next, int* y_next)
     {
     case Food:
         return Food;
+    case Wall:
     case Snake: // beating myself
         return Wall;
     }
@@ -315,6 +324,47 @@ void make_food()
     field[x][y] = Food;
 }
 
+void make_walls()
+{
+    int x, y;
+    int wall = 0;
+    int vert = 0;
+    while (wall < WALLS_NUMBER)
+    {
+        x = rand() % FIELD_WIDTH;
+        y = rand() % FIELD_HEIGHT;
+        if (vert)
+        {
+            int enough_space = y < FIELD_HEIGHT - MAX_WALL_SIZE;
+            int screen_edge = !(x > 0 && x < FIELD_WIDTH-1);
+            int next_to_player = y - MAX_WALL_SIZE >= snake.head->y &&
+                                 y + MAX_WALL_SIZE <= snake.head->y &&
+                                 x - snake.head->x < 5;
+            if (enough_space && !screen_edge && !next_to_player)
+            {
+                int j;
+                for (j = 0; j < 1 + rand() % MAX_WALL_SIZE; ++j)
+                    field[x][y + j] = Wall;
+                wall++;
+            }
+        }
+        else
+        {
+            int enough_space = x < FIELD_WIDTH - MAX_WALL_SIZE;
+            int screen_edge = !(y > 0 && y < FIELD_HEIGHT-1);
+            int next_to_player = y == snake.head->y && x - snake.head->x < 5;
+            if (enough_space && !screen_edge && !next_to_player)
+            {
+                int j;
+                for (j = 0; j < 1 + rand() % MAX_WALL_SIZE; ++j)
+                    field[x + j][y] = Wall;
+                wall++;
+            }
+        }
+        vert = !vert;
+    }
+}
+
 void init_game()
 {
     atexit(destroy_game);
@@ -328,6 +378,7 @@ void init_game()
     snake.tail->next = snake.head;
 
     srand(time(NULL));
+    make_walls();
     make_food();
 }
 
@@ -354,6 +405,7 @@ void destroy_game()
 int main()
 {
     init_game();
-    ng_init_graphics(WINDOW_WIDTH, WINDOW_HEIGHT, "Snake", on_update, on_render);
+    ng_init_graphics(WINDOW_WIDTH, WINDOW_HEIGHT,
+                     "Snake", on_update, on_render);
     return 0;
 }
