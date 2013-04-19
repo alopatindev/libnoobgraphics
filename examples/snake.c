@@ -16,7 +16,7 @@
 #define CELL_NONE_COLOR 0x000055FF
 #define CELL_SNAKE_COLOR 0x990000FF
 #define CELL_FOOD_COLOR 0x006600FF
-#define SNAKE_STEP_SPEED_MS 500
+#define SNAKE_STEP_SPEED_MS 300
 
 enum GameState
 {
@@ -47,6 +47,7 @@ struct SnakeCell
     int x;
     int y;
     struct SnakeCell* next;
+    struct SnakeCell* prev;
 };
 
 struct Snake
@@ -59,7 +60,6 @@ struct Snake
 void update_keyboard();
 void on_update(int dt);
 void render_mainmenu();
-void render_game();
 void render_cell(int x, int y, unsigned int color);
 void render_field();
 void on_render();
@@ -90,7 +90,7 @@ void update_keyboard()
             if (key == 13) // Enter
             {
                 game_state = Game;
-                ng_force_redraw();
+//                ng_force_redraw();
             }
             break;
         }
@@ -176,11 +176,6 @@ void render_cell(int x, int y, unsigned int color)
                       (y + 1) * CELL_WIDTH - CELL_DELIMETER);
 }
 
-void render_game()
-{
-    render_field();
-}
-
 void on_render()
 {
     switch (game_state)
@@ -189,13 +184,18 @@ void on_render()
         render_mainmenu();
         break;
     case Game:
-        render_game();
+        render_field();
         break;
     }
 }
 
 void turn_snake(enum Direction direction)
 {
+    if ((snake.direction == Left && direction == Right) ||
+        (snake.direction == Right && direction == Left) ||
+        (snake.direction == Top && direction == Bottom) ||
+        (snake.direction == Bottom && direction == Top))
+        return;
     snake.direction = direction;
 }
 
@@ -258,14 +258,10 @@ void update_snake()
     case Food:
         {
             struct SnakeCell* c = alloc_cell(x_next, y_next);
-            
-            if (snake.head == snake.tail)
-            {
-                snake.tail->next = c;
-            } else {
-                snake.head->next = c;
-            }
+            snake.head->next = c;
+            c->prev = snake.head;
             snake.head = c;
+
             field[snake.head->x][snake.head->y] = Snake;
 
             make_food();
@@ -276,18 +272,13 @@ void update_snake()
             field[snake.tail->x][snake.tail->y] = None;
 
             // replace tail with head
-            if (snake.head != snake.tail)
-            {
-                int x = snake.head->x;
-                int y = snake.head->y;
-                struct SnakeCell* n = snake.head;
-                snake.head->next = snake.tail;
-                snake.head = snake.head->next;
-                snake.head->next = NULL;
-                snake.tail = snake.tail->next != NULL ? snake.tail->next : n;
-                snake.head->x = x;
-                snake.head->y = y;
-            }
+            struct SnakeCell* new_tail = snake.tail->next;
+            snake.head->next = snake.tail;
+            snake.tail->prev = snake.head;
+            snake.tail->next = NULL;
+            snake.head = snake.tail;
+            snake.tail = new_tail;
+            snake.tail->prev = NULL;
 
             snake.head->x = x_next;
             snake.head->y = y_next;
@@ -307,6 +298,7 @@ struct SnakeCell* alloc_cell(int x, int y)
     c->x = x;
     c->y = y;
     c->next = NULL;
+    c->prev = NULL;
     return c;
 }
 
@@ -326,11 +318,15 @@ void make_food()
 void init_game()
 {
     atexit(destroy_game);
-    memset(field, 0, sizeof(field));
+
+    memset(field, None, sizeof(field));
     snake.direction = Right;
-    snake.head = alloc_cell(1, 1);
-    snake.tail = snake.head;
+
+    snake.head = alloc_cell(1, FIELD_HEIGHT - 2);
+    snake.tail = alloc_cell(0, FIELD_HEIGHT - 2);
+    snake.head->prev = snake.tail;
     snake.tail->next = snake.head;
+
     srand(time(NULL));
     make_food();
 }
