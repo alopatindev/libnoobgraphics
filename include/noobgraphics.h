@@ -8,6 +8,9 @@
 #define RELEASED GLUT_UP
 #define PRESSED GLUT_DOWN
 
+#include <GL/glew.h>
+#include <GL/glut.h>
+
 void ng_init_graphics(int width,
                       int height,
                       const char* title,
