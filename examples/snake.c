@@ -66,6 +66,7 @@ void on_render();
 void init_game();
 void destroy_game();
 void turn_snake(enum Direction direction);
+void update_snake();
 enum CellType get_snake_collision();
 struct SnakeCell* alloc_cell();
 
@@ -200,29 +201,34 @@ enum CellType get_snake_collision()
 {
     enum CellType t;
 
+    int x_next = snake.head->x;
+    int y_next = snake.head->y;
+
     switch (snake.direction)
     {
     case Left:
-        if (snake.head->x-1 < 0)
+        x_next--;
+        if (x_next < 0)
             return Wall;
-        t = field[snake.head->x-1][snake.head->y];
         break;
     case Right:
-        if (snake.head->x+1 >= FIELD_WIDTH)
+        x_next++;
+        if (x_next >= FIELD_WIDTH)
             return Wall;
-        t = field[snake.head->x+1][snake.head->y];
         break;
     case Top:
-        if (snake.head->y+1 < 0)
+        y_next++;
+        if (y_next >= FIELD_HEIGHT)
             return Wall;
-        t = field[snake.head->x][snake.head->y+1];
         break;
     case Bottom:
-        if (snake.head->y-1 >= FIELD_HEIGHT)
+        y_next--;
+        if (y_next < 0)
             return Wall;
-        t = field[snake.head->x][snake.head->y-1];
         break;
     }
+
+    t = field[x_next][y_next];
 
     switch (t)
     {
