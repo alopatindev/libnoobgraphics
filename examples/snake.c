@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
@@ -67,8 +68,9 @@ void init_game();
 void destroy_game();
 void turn_snake(enum Direction direction);
 void update_snake();
-enum CellType get_snake_collision();
+enum CellType get_snake_collision(int* x_next, int* y_next);
 struct SnakeCell* alloc_cell();
+void make_food();
 
 int main();
 
@@ -197,38 +199,38 @@ void turn_snake(enum Direction direction)
     snake.direction = direction;
 }
 
-enum CellType get_snake_collision()
+enum CellType get_snake_collision(int* x_next, int* y_next)
 {
     enum CellType t;
 
-    int x_next = snake.head->x;
-    int y_next = snake.head->y;
+    *x_next = snake.head->x;
+    *y_next = snake.head->y;
 
     switch (snake.direction)
     {
     case Left:
-        x_next--;
-        if (x_next < 0)
+        (*x_next)--;
+        if (*x_next < 0)
             return Wall;
         break;
     case Right:
-        x_next++;
-        if (x_next >= FIELD_WIDTH)
+        (*x_next)++;
+        if (*x_next >= FIELD_WIDTH)
             return Wall;
         break;
     case Top:
-        y_next++;
-        if (y_next >= FIELD_HEIGHT)
+        (*y_next)++;
+        if (*y_next >= FIELD_HEIGHT)
             return Wall;
         break;
     case Bottom:
-        y_next--;
-        if (y_next < 0)
+        (*y_next)--;
+        if (*y_next < 0)
             return Wall;
         break;
     }
 
-    t = field[x_next][y_next];
+    t = field[*x_next][*y_next];
 
     switch (t)
     {
@@ -243,15 +245,32 @@ enum CellType get_snake_collision()
 
 void update_snake()
 {
-    enum CellType ct = get_snake_collision();
+    int x_next, y_next;
+    enum CellType ct = get_snake_collision(&x_next, &y_next);
+
     switch (ct)
     {
     case Wall:
         game_state = MainMenu;
-        ng_force_redraw();
-        return;
+        destroy_game();
+        init_game();
+        break;
     case Food:
-//        return;
+        {
+            struct SnakeCell* c = alloc_cell(x_next, y_next);
+            
+            if (snake.head == snake.tail)
+            {
+                snake.tail->next = c;
+            } else {
+                snake.head->next = c;
+            }
+            snake.head = c;
+            field[snake.head->x][snake.head->y] = Snake;
+
+            make_food();
+            break;
+        }
     case None:
         {
             field[snake.tail->x][snake.tail->y] = None;
@@ -261,30 +280,21 @@ void update_snake()
             {
                 int x = snake.head->x;
                 int y = snake.head->y;
+                struct SnakeCell* n = snake.head;
                 snake.head->next = snake.tail;
                 snake.head = snake.head->next;
                 snake.head->next = NULL;
-                snake.tail = snake.tail->next;
+                snake.tail = snake.tail->next != NULL ? snake.tail->next : n;
                 snake.head->x = x;
                 snake.head->y = y;
             }
 
-            switch (snake.direction)
-            {
-            case Left:
-                snake.head->x--;
-                break;
-            case Right:
-                snake.head->x++;
-                break;
-            case Top:
-                snake.head->y++;
-                break;
-            case Bottom:
-                snake.head->y--;
-            }
+            snake.head->x = x_next;
+            snake.head->y = y_next;
 
             field[snake.head->x][snake.head->y] = Snake;
+
+            break;
         }
     }
 
@@ -300,6 +310,19 @@ struct SnakeCell* alloc_cell(int x, int y)
     return c;
 }
 
+void make_food()
+{
+    int x, y;
+
+    do
+    {
+        x = rand() % FIELD_WIDTH;
+        y = rand() % FIELD_HEIGHT;
+    } while (field[x][y] != None);
+
+    field[x][y] = Food;
+}
+
 void init_game()
 {
     atexit(destroy_game);
@@ -308,14 +331,16 @@ void init_game()
     snake.head = alloc_cell(1, 1);
     snake.tail = snake.head;
     snake.tail->next = snake.head;
-
-    field[4][4] = Food;
+    srand(time(NULL));
+    make_food();
 }
 
 void destroy_game()
 {
     if (snake.head == snake.tail && snake.head != NULL)
+    {
         free(snake.head);
+    }
     else
     {
         while (snake.tail)
@@ -325,6 +350,9 @@ void destroy_game()
             snake.tail = c;
         }
     }
+
+    snake.head = NULL;
+    snake.tail = NULL;
 }
 
 int main()
