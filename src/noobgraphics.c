@@ -47,7 +47,7 @@ void ng_init_graphics(int width,
     ng_mouse_state = RELEASED;
     ng_keyboard_key = 0;
     ng_keyboard_state = RELEASED;
-    ng_rgba_color = 0;
+    ng_rgba_color = -1;
     ng_dt = 0;
     ng_window_width = width;
     ng_window_height = height;
@@ -91,6 +91,7 @@ void ng_init_graphics(int width,
     ng_on_clear_and_render();
     glutPostRedisplay();
 
+    ng_set_color(0);
     glutMainLoop();
 }
 
