@@ -71,20 +71,39 @@ struct Figure
 
 enum CellType field[FIELD_WIDTH][FIELD_HEIGHT];
 
-int is_figure_collided()
+enum Direction
+{
+    Down,
+    Left,
+    Right
+};
+
+int is_figure_collided(enum Direction direction)
 {
     int xf, yf;
     for (xf = 0; xf < FIGURE_WIDTH; ++xf)
     {
         for (yf = 0; yf < FIGURE_WIDTH; ++yf)
         {
-            if (figure.cells[xf][yf] == Brick &&
-                (
-                    figure.y + yf >= FIELD_HEIGHT - 1 ||
-                    field[figure.x + xf][figure.y + yf + 1] == Wall
-                )
-            )
-                return TRUE;
+            if (figure.cells[xf][yf] == Brick)
+            {
+                switch (direction)
+                {
+                case Down:
+                    if (figure.y + yf + 1 >= FIELD_HEIGHT ||
+                        field[figure.x + xf][figure.y + yf + 1] == Wall)
+                        return TRUE;
+                    break;
+                case Left:
+                    if (figure.x + xf - 1 < 0)
+                        return TRUE;
+                    break;
+                case Right:
+                    if (figure.x + xf + 1 >= FIELD_WIDTH)
+                        return TRUE;
+                    break;
+                }
+            }
         }
     }
 
@@ -124,7 +143,7 @@ void update_figure(int x, int y, int type, enum RotationType rotation, int force
                 for (xf = 0; xf < FIGURE_WIDTH; ++xf)
                 {
                     for (yf = 0; yf < FIGURE_WIDTH; ++yf)
-                        new_cells[xf][yf] = cells[yf][FIGURE_WIDTH - xf -1];
+                        new_cells[xf][yf] = cells[yf][FIGURE_WIDTH-xf-1];
                 }
                 break;
             }
@@ -211,10 +230,10 @@ void set_next_figure()
     }
 
     // randomizing next figure
+    // FIXME
     update_figure(FIELD_WIDTH / 2 - FIGURE_WIDTH / 2,
                   0,
-                  //rand() % FIGURE_TYPES_NUMBER,
-                  0,
+                  rand() % FIGURE_TYPES_NUMBER,
                   Initial,
                   TRUE);
     int lr = rand() % 2;
@@ -280,6 +299,32 @@ void on_render()
     }
 }
 
+void go(enum Direction direction)
+{
+    if (is_figure_collided(direction))
+    {
+        if (direction == Down)
+            set_next_figure();
+    }
+    else
+    {
+        switch (direction)
+        {
+        case Down:
+            update_figure(figure.x, figure.y+1, figure.type, DontRotate, TRUE);
+            break;
+        case Left:
+            update_figure(figure.x-1, figure.y, figure.type, DontRotate, TRUE);
+            break;
+        case Right:
+            update_figure(figure.x+1, figure.y, figure.type, DontRotate, TRUE);
+            break;
+        }
+    }
+
+    ng_force_redraw();
+}
+
 void update_keyboard()
 {
     unsigned char key;
@@ -291,16 +336,23 @@ void update_keyboard()
 
     switch (key)
     {
-    /*case 'w':
-        update_figure(2, 2, 0, 0, TRUE);
-        break;*/
     case 'g':
+    case 'w':
         rotate_clockwise();
         ng_force_redraw();
         break;
     case 'h':
         rotate_counterclockwise();
         ng_force_redraw();
+        break;
+    case 's':
+        go(Down);
+        break;
+    case 'a':
+        go(Left);
+        break;
+    case 'd':
+        go(Right);
         break;
     }
 }
@@ -314,11 +366,7 @@ void on_update(int dt)
     if (figure_timer >= GAME_STEP_SPEED_MS)
     {
         figure_timer = 0;
-        if (is_figure_collided())
-            set_next_figure();
-        else
-            update_figure(figure.x, figure.y+1, figure.type, DontRotate, TRUE);
-        ng_force_redraw();
+        go(Down);
     }
 }
 
