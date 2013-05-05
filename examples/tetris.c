@@ -97,9 +97,13 @@ int is_figure_collided(enum Direction direction)
                 case Left:
                     if (figure.x + xf - 1 < 0)
                         return TRUE;
+                    if (field[figure.x + xf - 1][figure.y + yf] == Wall)
+                        return TRUE;
                     break;
                 case Right:
                     if (figure.x + xf + 1 >= FIELD_WIDTH)
+                        return TRUE;
+                    if (field[figure.x + xf + 1][figure.y + yf] == Wall)
                         return TRUE;
                     break;
                 }
@@ -108,6 +112,27 @@ int is_figure_collided(enum Direction direction)
     }
 
     return FALSE;
+}
+
+int can_rotate(enum CellType new_cells[FIGURE_WIDTH][FIGURE_WIDTH])
+{
+    int xf, yf;
+
+    for (xf = 0; xf < FIGURE_WIDTH; ++xf)
+    {
+        for (yf = 0; yf < FIGURE_WIDTH; ++yf)
+        {
+            if (new_cells[xf][yf] == Brick &&
+                    (
+                        figure.x + xf - 1 < 0 ||
+                        figure.x + xf + 1 >= FIELD_WIDTH ||
+                        field[figure.x + xf][figure.y + yf] != None
+                    )
+               )
+               return FALSE;
+        }
+    }
+    return TRUE;
 }
 
 void update_figure(int x, int y, int type, enum RotationType rotation, int force)
@@ -180,15 +205,7 @@ void update_figure(int x, int y, int type, enum RotationType rotation, int force
     }
 
     // checking if we can rotate at all
-    int can_rotate = TRUE;
-    for (xf = 0; xf < FIGURE_WIDTH; ++xf)
-    {
-        for (yf = 0; yf < FIGURE_WIDTH; ++yf)
-        {
-            if (new_cells[xf][yf] == Brick && field[xf + x][yf + y] != None)
-                can_rotate = FALSE;
-        }
-    }
+    int can_rot = can_rotate(new_cells);
 
     // finally update field
     for (xf = 0; xf < FIGURE_WIDTH; ++xf)
@@ -198,7 +215,7 @@ void update_figure(int x, int y, int type, enum RotationType rotation, int force
             enum CellType *c = &field[xf + x][yf + y];
             if (*c == None)
             {
-                if (can_rotate)
+                if (can_rot)
                     figure.cells[xf][yf] = new_cells[xf][yf];
                 *c = figure.cells[xf][yf];
             }
