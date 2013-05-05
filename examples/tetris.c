@@ -39,6 +39,12 @@ static enum CellType figure_types[][FIGURE_WIDTH][FIGURE_WIDTH] = {
         {0,1,1,0}
     },
     {
+        {0,0,0,0},
+        {0,0,1,0},
+        {0,0,1,0},
+        {0,1,1,0}
+    },
+    {
         {0,1,0,0},
         {0,1,0,0},
         {0,1,0,0},
@@ -48,6 +54,24 @@ static enum CellType figure_types[][FIGURE_WIDTH][FIGURE_WIDTH] = {
         {0,0,1,0},
         {0,1,1,0},
         {0,1,0,0},
+        {0,0,0,0}
+    },
+    {
+        {0,1,0,0},
+        {0,1,1,0},
+        {0,0,1,0},
+        {0,0,0,0}
+    },
+    {
+        {0,0,1,0},
+        {0,1,1,0},
+        {0,0,1,0},
+        {0,0,0,0}
+    },
+    {
+        {0,0,0,0},
+        {0,1,1,0},
+        {0,1,1,0},
         {0,0,0,0}
     }
 };
@@ -247,10 +271,13 @@ void set_next_figure()
     }
 
     // randomizing next figure
-    // FIXME
+    int type;
+    do
+        type = rand() % FIGURE_TYPES_NUMBER;
+    while (type == figure.type);
     update_figure(FIELD_WIDTH / 2 - FIGURE_WIDTH / 2,
                   0,
-                  rand() % FIGURE_TYPES_NUMBER,
+                  type,
                   Initial,
                   TRUE);
     int lr = rand() % 2;
@@ -321,7 +348,11 @@ void go(enum Direction direction)
     if (is_figure_collided(direction))
     {
         if (direction == Down)
+        {
             set_next_figure();
+            if (is_figure_collided(direction))
+                printf("game over\n");
+        }
     }
     else
     {
