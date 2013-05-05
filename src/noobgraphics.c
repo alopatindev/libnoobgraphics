@@ -292,6 +292,7 @@ void ng_get_keyboard(unsigned char* key, int* state)
 {
     *key = ng_keyboard_key;
     *state = ng_keyboard_state;
+    ng_keyboard_state = RELEASED;
 }
 
 void ng_on_mouse_input(int button, int state, int x, int y)
