@@ -343,6 +343,43 @@ void on_render()
     }
 }
 
+void strike(int line_y)
+{
+    int x, y;
+    for (y = line_y; y >= 1; --y)
+    {
+        for (x = 0; x < FIELD_WIDTH; ++x)
+            field[x][y] = field[x][y-1];
+    }
+}
+
+void update_field_strikes()
+{
+    int y = 0;
+    while (y < FIELD_HEIGHT)
+    {
+        int x;
+        int filled = 1;
+
+        for (x = 0; x < FIELD_WIDTH; ++x)
+        {
+            if (field[x][y] != Wall)
+            {
+                filled = FALSE;
+                break;
+            }
+        }
+
+        if (filled)
+        {
+            strike(y);
+            y += 2;
+        } else {
+            ++y;
+        }
+    }
+}
+
 void go(enum Direction direction)
 {
     if (is_figure_collided(direction))
@@ -352,6 +389,8 @@ void go(enum Direction direction)
             set_next_figure();
             if (is_figure_collided(direction))
                 printf("game over\n");
+            else
+                update_field_strikes();
         }
     }
     else
